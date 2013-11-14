@@ -1305,6 +1305,10 @@ and perform ?subtask (op: operation) (t: Xenops_task.t) : unit =
 			] @ (atomics_of_operation (VM_shutdown (id, None))) @ [
 				VM_hook_script(id, Xenops_hooks.VM_post_destroy, Xenops_hooks.reason__suspend);
 			] in
+			(* DEBUG for CA-112880 *)
+			debug "ca-112880: not destroying domain yet...";
+			Thread.delay 20.0;
+			debug "ca-112880: now destroying domain...";
 			perform_atomics atomics t;
 			VM_DB.signal id
 		| VM_receive_memory (id, memory_limit, s) ->
