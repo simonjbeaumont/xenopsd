@@ -1,0 +1,125 @@
+A while ago some work was done to tweak our suspend image format to be
+compatible with the libxl format (ef3bf4b..bd6a389). This involved making some
+inferences from the suspend image as to its providence and deciding how to
+decode it from these inferences.
+
+Now, with the need to support migration from 32-bit to 64-bit toolstacks, we
+need to have further knowledge about the source image such that we can pass the
+correct options to Xenguest when trying to restore on a 64-bit system a VM that
+was suspended on a 32-bit system.
+
+As an aside we are also looking for an opportunity to remove the filesystem
+from the suspend image VDI since this would remove the need to block attach the
+VDI to dom0.
+
+Given the above, it seems the initial tweaks to the save signature are going to
+be inadequate for encoding further data and we would like to move away from
+having to infer what we're looking at on the fly by the presence/absence of
+specific bits of data. We also need to be future-proof against further
+modifications to the format which may be needed later.
+
+Since the image is in a stack/onion format and this is a xenopsd->xenopsd only
+protocol, I propose therefore that we move to an image header rather than
+a signature. This header will include a variable length section of
+(json-encoded) data. This data will contain the flags necessary to determine
+how to restore from the image. We can also take this opportunity to record some
+debug info in this header (such as the source host/toolstack/hypervisor details
+etc.)
+
+Old Image format
+================
+We need to be compatible with old versions and this is what the suspend image
+VDI looks like in the last released version to date (XenServer 6.2)...
+
+There is an EXT2 filesystem on the VDI and on this filesystem there is a single
+file at /suspend-image which contains the following data:
+
+    +-----------------------------+
+    | "XenSavedDomain\n"          |  <-- added by xenopsd-classic
+    |-----------------------------|
+    |  Memory image dump          |  <-- libxc
+    |-----------------------------|
+    | "QemuDeviceModelRecord\n"   |
+    |  <size of following record> |  <-- added by xenopsd-classic
+    |  (a 32-bit big-endian int)  |
+    |-----------------------------|
+    | "QEVM"                      |  <-- libxc/qemu
+    |  Qemu device record         |
+    +-----------------------------+
+
+We have now reverted to upstream libxc to have it handle everything after the first block
+containing the "XenSavedDomain\n" xenopsd signature. 
+
+Proposed image format
+=====================
+We propose that we extend our header at the top to be something like the below:
+
+
+    +-----------------------------+
+    | "XenSavedDomainV2"          |  <-- added by xenopsd-classic
+    |-----------------------------|
+    | 64-bit integer, l (length)  |
+    |-----------------------------|
+    | 64-bit checksum, c          |
+    |-----------------------------|
+    | JSON Metadata               |
+    |   - of length l             |
+    |   - with checksum c         |
+    |=============================|
+    |  Memory image dump          |  <-- same as above
+    .                             .
+    .                             .
+    .                             .
+    +-----------------------------+
+
+Where the JSON metdata would be of the following form:
+
+{
+    parameters: {},
+    info: {
+        host-name: "",
+        xenopsd-version: "",
+        xenguest-version: "",
+        suspend-date: ""
+    }
+}
+
+Where parameters would be the flags that control the resume logic (specifying
+flags to xenguest for example) and info would be a place to store some useful
+infomation for logginge etc.
+
+Changes in ring0
+================
+It turns out that using the -legacy-stream option in xenguest is not going to
+the method provided by ring0 for the toolstack to use. This is good because
+this would not be present in any opensource Xenguest which would break
+Xapi/Xenopsd on non-XenServer deployments.
+
+Instead, the suggestion is that the toolstack (Xenopsd) will need to fork out
+to a v1->v2-conversion script, passing it the fd with the legacy stream and
+reading from the other end of the pipe.
+
+We've just found out that the reverting of the QEMU save tail will again become
+the responsibility of the toolstack and not that of libxc (we recently removed
+code to do this to be inline with upstream libxc but upstream libxc is going to
+stop doing this and move the functionality into upstream libxl too).
+
+This gives us an opportunity to fix all of our layering violations by pushing
+all of the conversion logic into one place. I.e. we can write our new save
+function and have just one restore function that only needs to be able to
+restore things in the format that that version of Xenopsd saves in. Then the
+logic would be to fork out as soon as we detect the old signature in the
+Xenopsd frame. We would also not really need many (if any) flags; but we might
+need some framing. I.e.:
+
+    1. Read 16 bytes
+    2. If "XenSavedDomain\n":
+        Pipe fd through conversion script and go to 3.
+    3. If "XenSavedDomainV2":
+        Pass to restore function
+
+Now we can have one restore function and all the layering violation and
+knowledge of old formats has been isolated. It's responsibilities will be to
+consume any framing in the Xenopsd layer and pass to libxl or Xenguest/Qemu in
+the appropriate places. We might also futher extend this with a Demu record
+with ease if we go for this strategy.
