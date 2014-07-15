@@ -20,6 +20,7 @@ let hvmloader = ref "/usr/lib/xen-4.1/boot/hvmloader"
 let pygrub = ref "/usr/lib/xen-4.1/bin/pygrub"
 let eliloader = ref "/usr/bin/eliloader"
 let legacy_conv_tool = ref "/usr/lib64/xen/bin/legacy.py"
+let verify_libxc_v2 = ref "/usr/lib64/xen/bin/verify-stream-v2"
 
 open Unix
 
