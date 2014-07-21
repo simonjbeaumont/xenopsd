@@ -745,6 +745,7 @@ let build (task: Xenops_task.t) ~xc ~xs ~store_domid ~console_domid info timeoff
 		            ~vcpus:info.vcpus xenguest_path domid
 
 let restore_libxc_record (task: Xenops_task.t) ~hvm ~store_port ~console_port ~extras xenguest_path domid uuid fd =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let fd_uuid = Uuid.(to_string (create `V4)) in
 	let line = XenguestHelper.with_connection task xenguest_path domid
 	([
@@ -764,6 +765,7 @@ let restore_libxc_record (task: Xenops_task.t) ~hvm ~store_port ~console_port ~e
 		raise Domain_restore_failed
 
 let consume_qemu_record fd limit domid uuid =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let file = sprintf qemu_restore_path domid in
 	let fd2 = Unix.openfile file
 		[ Unix.O_WRONLY; Unix.O_CREAT; Unix.O_TRUNC; ] 0o640
@@ -780,6 +782,7 @@ let consume_qemu_record fd limit domid uuid =
 	) (fun () -> Unix.close fd2)
 
 let restore_common (task: Xenops_task.t) ~xc ~xs ~hvm ~store_port ~store_domid ~console_port ~console_domid ~no_incr_generationid ~vcpus ~extras xenguest_path domid fd =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let uuid = get_uuid ~xc domid in
 	let open Suspend_image in
 	match read_save_signature fd with
@@ -952,6 +955,7 @@ let restore (task: Xenops_task.t) ~xc ~xs ~store_domid ~console_domid ~no_incr_g
 type suspend_flag = Live | Debug
 
 let write_libxc_record (task: Xenops_task.t) ~xc ~xs ~hvm xenguest_path domid uuid fd flags progress_callback qemu_domid do_suspend_callback =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let fd_uuid = Uuid.(to_string (create `V4)) in
 
 	let cmdline_to_flag flag =
@@ -1028,6 +1032,7 @@ let write_libxc_record (task: Xenops_task.t) ~xc ~xs ~hvm xenguest_path domid uu
 	)
 
 let write_qemu_record domid uuid legacy_libxc fd =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let file = sprintf qemu_save_path domid in
 	let fd2 = Unix.openfile file [ Unix.O_RDONLY ] 0o640 in
 	finally (fun () ->
@@ -1054,6 +1059,7 @@ let write_qemu_record domid uuid legacy_libxc fd =
  * context is saved to fd
  *)
 let suspend (task: Xenops_task.t) ~xc ~xs ~hvm xenguest_path vm_str domid fd flags ?(progress_callback = fun _ -> ()) ~qemu_domid do_suspend_callback =
+	let module DD = Debug.Make(struct let name = "migv2" end) in let open DD in
 	let uuid = get_uuid ~xc domid in
 	debug "VM = %s; domid = %d; suspend live = %b" (Uuid.to_string uuid) domid (List.mem Live flags);
 	let open Suspend_image in let open Suspend_image.M in
