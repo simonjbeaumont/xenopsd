@@ -18,7 +18,15 @@ module M : sig
 end
 
 module Xenops_record : sig
-	type t
+	open Sexplib.Std
+	open Sexplib.Conv
+	type t = {
+		time: string;
+		word_size: int;
+		(* All additional fields below should use the sexp_option extension *)
+		vm_str: string sexp_option;
+		xs_subtree: (string * string) list sexp_option;
+	} with sexp
 	val make : ?vm_str:string -> ?xs_subtree:(string * string) list -> unit -> t
 	val to_string : t -> string
 	val of_string : string -> t

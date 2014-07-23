@@ -5,6 +5,32 @@ let msg ~prefix s  = Printf.printf "%s: %s\n%!" prefix s
 let debug fmt = Printf.ksprintf (fun s -> if !opt_debug then msg ~prefix:"debug" s) fmt
 let error fmt = Printf.ksprintf (msg ~prefix:"error") fmt
 
+let rec para_of_string max_length s =
+	let slen = String.length s in
+	let rec inner acc i =
+		if i = slen then acc
+		else
+			let line_length = min (slen - i) max_length in
+			let line = String.sub s i line_length in
+			inner (line::acc) (i + line_length)
+	in
+	inner [] 0 |> List.rev
+
+let strings_of_xenops_record max_length r =
+	let open Xenops_record in
+	let open Printf in
+	let unbox = function Some x -> x | None -> "None" in
+	sprintf "Time suspended: %s" r.time
+	:: sprintf "Word size on source: %d" r.word_size
+	:: sprintf "VM record: %s"
+		match r.vm_str with Some x -> para_of_string max_length x | _ -> "None"
+	:: sprintf "XenStore domain tree: %s"
+		match r.xs_subtree with
+		| Some x ->
+			List.map (fun (k, v) -> sprintf "%s = \"%s\"" k v) x
+			|> String.concat "\n"
+		| None -> "None"
+
 let verify_libxc_v2_record fd =
 	let fd_uuid = Uuidm.(to_string (create `V4)) in
 	let path = !Path.verify_libxc_v2 in
@@ -38,14 +64,16 @@ let parse_layout fd =
 			debug "Dummy-processing record...";
 			begin match h with
 			| Xenops, len ->
-				Io.read fd (Io.int_of_int64_exn len) |> ignore;
-				aux (h::acc)
+				let record_strings = Io.read fd (Io.int_of_int64_exn len)
+				|> Xenops_record.of_string
+				|> strings_of_xenops_record in
+				aux (h,record_strings::acc)
 			| Libxc, _ ->
 				verify_libxc_v2_record fd;
-				aux (h::acc)
+				aux (h,[]::acc)
 			| Qemu_trad, len ->
 				Io.read fd (Io.int_of_int64_exn len) |> ignore;
-				aux (h::acc)
+				aux (h,[]::acc)
 			| End_of_image, _ -> return (h::acc)
 			| _ -> failwith "Unsupported"
 			end
@@ -55,7 +83,7 @@ let parse_layout fd =
 		| `Error e ->
 			failwith (Printf.sprintf "Error parsing image: %s" (Printexc.to_string e))
 
-let print_layout headers =
+let print_layout records =
 	let module S = String in
 	let default_width = 10 in
 	let max_header_word_length =
@@ -64,21 +92,23 @@ let print_layout headers =
 	in
 	let left_pad = "| " and right_pad = " |" in
 	let col_width = max_header_word_length + (S.length left_pad) + (S.length right_pad) in
-	Printf.printf "+%s+\n" (S.make (col_width - 2) '-');
+	Printf.printf "+%s+\n" (S.make (col_width - 2) '=');
+	let print_row s =
+		let filled_space = List.map S.length [left_pad; s; right_pad]
+		|> List.fold_left (+) 0 in
+		let padding = S.make (col_width - filled_space) ' ' in
+		Printf.printf "%s%s%s%s\n" left_pad h_str padding right_pad
+	in
 	let rec inner = function
 	| [] -> ()
-	| h::hs ->
-		let h_str = string_of_header h in
-		let filled_space =
-			List.map S.length [left_pad; h_str; right_pad]
-			|> List.fold_left (+) 0
-		in
-		let padding = S.make (col_width - filled_space) ' ' in
-		Printf.printf "%s%s%s%s\n" left_pad h_str padding right_pad;
+	| (header, contents)::rs ->
+		print_row string_of_header h;
 		Printf.printf "+%s+\n" (S.make (col_width - 2) '-');
+		List.map print_row contents;
+		Printf.printf "+%s+\n" (S.make (col_width - 2) '=');
 		inner hs
 	in
-	inner headers
+	inner records
 
 let print_image path =
 	Unixext.with_file path [Unix.O_RDONLY] 0o400 (fun fd ->
