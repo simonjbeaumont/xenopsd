@@ -62,6 +62,15 @@ Executable watch_test
   Install:            false
   BuildDepends:       xenopsd, xenstore, xenstore.unix, xenstore_transport, xenstore_transport.unix, threads
 
+Executable cancel_utils_test
+  CompiledObject:     best
+  Path:               xc
+  ByteOpt:            -warn-error +a
+  NativeOpt:          -warn-error +a
+  MainIs:             cancel_utils_test.ml
+  Install:            false
+  BuildDepends:       xenopsd, xenstore, xenstore.unix, xenstore_transport, xenstore_transport.unix, xenctrl, threads, oUnit
+
 Executable xenopsd_simulator
   CompiledObject:     best
   Path:               simulator

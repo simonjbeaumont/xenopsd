@@ -14,7 +14,6 @@
 open Printf
 open Xenops_utils
 open Xenstore
-open Xenops_helpers
 open Xenops_task
 open Device_common
 

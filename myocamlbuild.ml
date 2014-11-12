@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: c9ea8dd80b50dacb26e694a87f18ccf2) *)
+(* DO NOT EDIT (digest: 8a094d4782ce634d4505e0f51838e999) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -714,6 +714,48 @@ let package_default =
            ],
             [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
           ([
+              "oasis_executable_cancel_utils_test_byte";
+              "ocaml";
+              "link";
+              "byte"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
+              "oasis_executable_cancel_utils_test_native";
+              "ocaml";
+              "link";
+              "native"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
+              "oasis_executable_cancel_utils_test_byte";
+              "ocaml";
+              "ocamldep";
+              "byte"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
+              "oasis_executable_cancel_utils_test_native";
+              "ocaml";
+              "ocamldep";
+              "native"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
+              "oasis_executable_cancel_utils_test_byte";
+              "ocaml";
+              "compile";
+              "byte"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
+              "oasis_executable_cancel_utils_test_native";
+              "ocaml";
+              "compile";
+              "native"
+           ],
+            [(OASISExpr.EBool true, S [A "-warn-error"; A "+a"])]);
+          ([
               "oasis_executable_xenopsd_simulator_byte";
               "ocaml";
               "link";
@@ -852,6 +894,6 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 856 "myocamlbuild.ml"
+# 898 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

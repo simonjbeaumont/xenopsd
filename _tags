@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: b295e9a47484cc1eec12b9840e42b6a1)
+# DO NOT EDIT (digest: 478047aaa43014d5f24373dd9f0605c6)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -111,7 +111,6 @@
 <xc/*.ml{,i}>: pkg_xcp-rrd
 <xc/*.ml{,i}>: pkg_xcp.memory
 <xc/*.ml{,i}>: pkg_xcp.rrd
-<xc/*.ml{,i}>: pkg_xenctrl
 "xc/fsync_stubs.c": pkg_cohttp
 "xc/fsync_stubs.c": pkg_fd-send-recv
 "xc/fsync_stubs.c": pkg_forkexec
@@ -194,9 +193,39 @@
 <xc/watch_test.{native,byte}>: pkg_xenstore_transport.unix
 <xc/watch_test.{native,byte}>: pkg_xmlm
 <xc/watch_test.{native,byte}>: use_xenopsd
+# Executable cancel_utils_test
+<xc/cancel_utils_test.{native,byte}>: oasis_executable_cancel_utils_test_byte
+<xc/*.ml{,i}>: oasis_executable_cancel_utils_test_byte
+<xc/cancel_utils_test.{native,byte}>: oasis_executable_cancel_utils_test_native
+<xc/*.ml{,i}>: oasis_executable_cancel_utils_test_native
+<xc/cancel_utils_test.{native,byte}>: pkg_cohttp
+<xc/cancel_utils_test.{native,byte}>: pkg_fd-send-recv
+<xc/cancel_utils_test.{native,byte}>: pkg_forkexec
+<xc/cancel_utils_test.{native,byte}>: pkg_oUnit
+<xc/cancel_utils_test.{native,byte}>: pkg_oclock
+<xc/cancel_utils_test.{native,byte}>: pkg_rpclib
+<xc/cancel_utils_test.{native,byte}>: pkg_rpclib.syntax
+<xc/cancel_utils_test.{native,byte}>: pkg_sexplib
+<xc/cancel_utils_test.{native,byte}>: pkg_sexplib.syntax
+<xc/cancel_utils_test.{native,byte}>: pkg_threads
+<xc/cancel_utils_test.{native,byte}>: pkg_threads.posix
+<xc/cancel_utils_test.{native,byte}>: pkg_uri
+<xc/cancel_utils_test.{native,byte}>: pkg_uuidm
+<xc/cancel_utils_test.{native,byte}>: pkg_uutf
+<xc/cancel_utils_test.{native,byte}>: pkg_xcp
+<xc/cancel_utils_test.{native,byte}>: pkg_xcp.storage
+<xc/cancel_utils_test.{native,byte}>: pkg_xcp.xen
+<xc/cancel_utils_test.{native,byte}>: pkg_xenctrl
+<xc/cancel_utils_test.{native,byte}>: pkg_xenstore
+<xc/cancel_utils_test.{native,byte}>: pkg_xenstore.unix
+<xc/cancel_utils_test.{native,byte}>: pkg_xenstore_transport
+<xc/cancel_utils_test.{native,byte}>: pkg_xenstore_transport.unix
+<xc/cancel_utils_test.{native,byte}>: pkg_xmlm
+<xc/cancel_utils_test.{native,byte}>: use_xenopsd
 <xc/*.ml{,i}>: pkg_cohttp
 <xc/*.ml{,i}>: pkg_fd-send-recv
 <xc/*.ml{,i}>: pkg_forkexec
+<xc/*.ml{,i}>: pkg_oUnit
 <xc/*.ml{,i}>: pkg_oclock
 <xc/*.ml{,i}>: pkg_rpclib
 <xc/*.ml{,i}>: pkg_rpclib.syntax
@@ -210,6 +239,7 @@
 <xc/*.ml{,i}>: pkg_xcp
 <xc/*.ml{,i}>: pkg_xcp.storage
 <xc/*.ml{,i}>: pkg_xcp.xen
+<xc/*.ml{,i}>: pkg_xenctrl
 <xc/*.ml{,i}>: pkg_xenstore
 <xc/*.ml{,i}>: pkg_xenstore.unix
 <xc/*.ml{,i}>: pkg_xenstore_transport
