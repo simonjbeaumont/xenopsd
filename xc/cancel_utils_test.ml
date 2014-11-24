@@ -34,6 +34,20 @@ let xenstore_test xs _ =
 			(* success *)
 			()
 
+let cancellable_watch_test xs () =
+	let task = Xenops_task.add tasks "cancellable_watch_test" (fun _ -> None) in
+	let after n f = Thread.create f () |> ignore in
+	let path = "/foo/bar" in
+	xs.Xs.write path "baz";
+
+	after 1. (fun () -> xs.Xs.write path "new_value");
+	cancellable_watch (TestPath path) [Watch.value_to_become path "new_value"] [] task ~xs ~timeout:3. ()
+	|> assert_bool "Didn't notice new value";
+
+	cancellable_watch (TestPath path) [Watch.value_to_become path "new_value"] [] task ~xs ~timeout:1.
+	|> assert_raises ~msg:"Something fired that shouldn't have" (Watch.Timeout 1.)
+
+
 let subprocess_test _ =
 	let task = Xenops_task.add tasks "test" (fun _ -> None) in
 	let (_: Thread.t) = Thread.create (fun () -> Thread.delay 1.; Xenops_task.cancel tasks task.Xenops_task.id) () in
@@ -64,6 +78,7 @@ let _ =
 		[
 			"subprocess" >:: subprocess_test;
 			"xenstore" >:: with_xs (fun xs -> xenstore_test xs);
+			"cancellable_watch_test" >:: with_xs (fun xs -> cancellable_watch_test xs);
 		] in
 
 	run_test_tt ~verbose:!verbose suite

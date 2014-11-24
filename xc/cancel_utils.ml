@@ -123,6 +123,7 @@ let cancellable_watch key good_watches error_watches (task: Xenops_task.t) ~xs ~
 				(fun () ->
 					let cancel_watches = watches_of ~xs key in
 					let rec loop () =
+                        Printf.printf "calling Watch.wait_for\n%!";
 						let _, _ = Watch.wait_for ~xs ~timeout (Watch.any_of
 							(List.map (fun w -> (), w) (good_watches @ error_watches @ cancel_watches))
 						) in
@@ -133,7 +134,7 @@ let cancellable_watch key good_watches error_watches (task: Xenops_task.t) ~xs ~
 						match any_have_fired good_watches, any_have_fired error_watches, any_have_fired cancel_watches with
 							| true, _, _ -> true
 							| false, true, _ -> false
-							| false, false, true -> Xenops_task.raise_cancelled task
+                            | false, false, true -> Printf.printf "Raising\n"; Xenops_task.raise_cancelled task
 							| false, false, false ->
 								(* they must have fired and then fired again: retest *)
 								loop () in
