@@ -1367,6 +1367,8 @@ module VM = struct
 						let vm_str = Vm.sexp_of_t vm |> Sexplib.Sexp.to_string in
 						Domain.suspend task ~xc ~xs ~hvm ~progress_callback ~qemu_domid (choose_xenguest vm.Vm.platformdata) vm_str domid fd flags'
 							(fun () ->
+								debug "ca-195652: INJECTING FAULT: Failed_to_acknowledge_shutdown_request.";
+								if true then raise Failed_to_acknowledge_shutdown_request;
 								if not(request_shutdown task vm Suspend 30.)
 								then raise (Failed_to_acknowledge_shutdown_request);
 								if not(wait_shutdown task vm Suspend 1200.)
