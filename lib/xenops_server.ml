@@ -177,11 +177,14 @@ module VM_DB = struct
 		List.combine vms states
 	let m = Mutex.create ()
 	let signal id =
-		debug "VM_DB.signal %s" id;
+		debug "ca-195652: VM_DB.signal %s" id;
 		Mutex.execute m
 			(fun () ->
 				if exists id
-				then Updates.add (Dynamic.Vm id) updates
+				then begin
+					debug "ca-195652: Updates.add (Dynamic.Vm id) updates";
+					Updates.add (Dynamic.Vm id) updates;
+				end
 			)
 	let remove id =
 		Mutex.execute m
@@ -582,7 +585,7 @@ module Worker = struct
 				)) do
 					Mutex.execute t.m (fun () -> t.state <- Idle);
 					let tag, queue, (op, item) = Redirector.pop () in (* blocks here *)
-					debug "Queue.pop returned %s" (string_of_operation op);
+					debug "ca-195652: Queue.pop returned %s" (string_of_operation op);
 					Mutex.execute t.m (fun () -> t.state <- Processing (op, item));
 					begin
 						try
@@ -1289,7 +1292,7 @@ and perform ?subtask ?result (op: operation) (t: Xenops_task.t) : unit =
 			rebooting id (fun () -> perform_atomics (atomics_of_operation op) t);
 			VM_DB.signal id
 		| VM_shutdown (id, timeout) ->
-			debug "VM.shutdown %s" id;
+			debug "ca-195652: VM.shutdown %s" id;
 			perform_atomics (atomics_of_operation op) t;
 			VM_DB.signal id
 		| VM_suspend (id, data) ->
@@ -1448,21 +1451,23 @@ and perform ?subtask ?result (op: operation) (t: Xenops_task.t) : unit =
 				| Some Needs_crashdump ->
 					(* A VM which crashes too quickly should be shutdown *)
 					if run_time < 120. then begin
-						warn "VM %s crashed too quickly after start (%.2f seconds); shutting down" id run_time;
+						warn "ca-195652: VM %s crashed too quickly after start (%.2f seconds); shutting down" id run_time;
 						[ Vm.Shutdown ]
 					end else vm.Vm.on_crash
 				| Some Needs_suspend ->
-					warn "VM %s has unexpectedly suspended" id;
+					warn "ca-195652: VM %s has unexpectedly suspended" id;
 					[ Vm.Shutdown ]
 				| None ->
-					debug "VM %s is not requesting any attention" id;
+					debug "ca-195652: VM %s is not requesting any attention" id;
 					[] in
 			let operations_of_action = function
 				| Vm.Coredump -> []
-				| Vm.Shutdown -> [ VM_shutdown (id, None) ]
+				| Vm.Shutdown ->
+					debug "ca-195652: VM gonna shutdown innit...";
+					[ VM_shutdown (id, None) ]
 				| Vm.Start    ->
 					let delay = if run_time < B.VM.minimum_reboot_delay then begin
-						debug "VM %s rebooted too quickly; inserting delay" id;
+						debug "ca-195652: VM %s rebooted too quickly; inserting delay" id;
 						[ Atomic (VM_delay (id, 15.)) ]
 					end else [] in
 					delay @ [ VM_reboot (id, None) ]
@@ -2085,7 +2090,7 @@ module UPDATES = struct
 	let refresh_vm _ dbg id =
 		Debug.with_thread_associated dbg
 			(fun () ->
-				debug "UPDATES.refresh_vm %s" id;
+				debug "ca-195652: UPDATES.refresh_vm %s" id;
 				VM_DB.signal id;
 				List.iter VBD_DB.signal (VBD_DB.ids id);
 				List.iter VIF_DB.signal (VIF_DB.ids id);
@@ -2108,11 +2113,11 @@ let internal_event_thread_body = Debug.with_thread_associated "events" (fun () -
 				let _, updates, next_id = B.UPDATES.get !id None in
 				(* Note, backend updates don't use barriers so we should always get updates. *)
 				if updates = []
-				then error "Event thread received an empty list of events: this should never happen";
+				then error "ca-195652: Event thread received an empty list of events: this should never happen";
 				List.iter
 					(function
 						| Dynamic.Vm id ->
-							debug "Received an event on managed VM %s" id;
+								debug "ca-195652: Received an event on managed VM %s; queuing a VM_check_state" id;
 							queue_operation dbg id (VM_check_state id) |> TASK.destroy'
 						| Dynamic.Vbd id ->
 							debug "Received an event on managed VBD %s.%s" (fst id) (snd id);
