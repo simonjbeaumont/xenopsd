@@ -350,6 +350,10 @@ let sysrq ~xs domid key =
 	xs.Xs.write path (String.make 1 key)
 
 let destroy (task: Xenops_task.t) ~xc ~xs ~qemu_domid domid =
+	let delay = 1. in
+	debug "ca-195652: Delaying Domain.destroy by %.1f seconds so other on_domain wrappers catch up" delay;
+	Thread.delay delay;
+
 	let dom_path = xs.Xs.getdomainpath domid in
 	let uuid = get_uuid ~xc domid in
 
